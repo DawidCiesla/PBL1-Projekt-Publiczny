@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Urządzenie {{ device_id }} — {{ kurnik.name }} — MacNuggetNet{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('kurnik_detail', kurnik_id=kurnik.id) }}">{{ kurnik.name }}</a></li>
+    <li class="breadcrumb-item active">Device {{ device_id }}</li>
+  </ol>
+</nav>
+
+<h4>Urządzenie <span class="badge bg-secondary">{{ device_id }}</span></h4>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat temp">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. Temp (24h)</div>
+        <div class="fs-4 fw-bold">{{ '%.1f'|format(avg.avg_temp) if avg and avg.avg_temp else '—' }} °C</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat hum">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. Wilgotność</div>
+        <div class="fs-4 fw-bold">{{ '%.1f'|format(avg.avg_hum) if avg and avg.avg_hum else '—' }} %</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat co2">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. CO₂</div>
+        <div class="fs-4 fw-bold">{{ '%d'|format(avg.avg_co2) if avg and avg.avg_co2 else '—' }} ppm</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat nh3">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. NH₃</div>
+        <div class="fs-4 fw-bold">{{ '%d'|format(avg.avg_nh3) if avg and avg.avg_nh3 else '—' }} ppm</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat sun">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. Nasłonecznienie</div>
+        <div class="fs-4 fw-bold">{{ '%d'|format(avg.avg_sun) if avg and avg.avg_sun else '—' }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h5 class="mb-3">Wykresy</h5>
+<div class="mb-3">
+  <div class="btn-group" role="group" aria-label="Time range">
+    <button type="button" class="btn btn-sm btn-outline-primary range-btn" data-hours="1">1h</button>
+    <button type="button" class="btn btn-sm btn-outline-primary range-btn" data-hours="6">6h</button>
+    <button type="button" class="btn btn-sm btn-primary range-btn active" data-hours="24">24h</button>
+    <button type="button" class="btn btn-sm btn-outline-primary range-btn" data-hours="72">3d</button>
+    <button type="button" class="btn btn-sm btn-outline-primary range-btn" data-hours="168">7d</button>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6"><div class="card"><div class="card-header">Temperatura</div><div class="card-body"><canvas id="chartTemp"></canvas></div></div></div>
+  <div class="col-lg-6"><div class="card"><div class="card-header">Wilgotność</div><div class="card-body"><canvas id="chartHum"></canvas></div></div></div>
+  <div class="col-lg-6"><div class="card"><div class="card-header">CO₂</div><div class="card-body"><canvas id="chartCo2"></canvas></div></div></div>
+  <div class="col-lg-6"><div class="card"><div class="card-header">NH₃</div><div class="card-body"><canvas id="chartNh3"></canvas></div></div></div>
+  <div class="col-lg-6"><div class="card"><div class="card-header">Nasłonecznienie</div><div class="card-body"><canvas id="chartSun"></canvas></div></div></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const topic='{{ kurnik.topic_id }}';
+const deviceId='{{ device_id }}';
+let chartTemp, chartHum, chartCo2, chartNh3, chartSun;
+
+async function loadDeviceCharts(hours=24){
+  const res=await fetch(`/api/series?topic=${encodeURIComponent(topic)}&device_id=${deviceId}&hours=${hours}&limit=2000`);
+  const json=await res.json();
+  const labels=json.data.map(d=>d.ts);
+  const temps=json.data.map(d=>d.temp);
+  const hums=json.data.map(d=>d.hum);
+  const co2s=json.data.map(d=>d.co2);
+  const nh3s=json.data.map(d=>d.nh3);
+  const suns=json.data.map(d=>d.sun);
+  const baseOpts={responsive:true,plugins:{legend:{display:false}},scales:{x:{type:'time',time:{tooltipFormat:'yyyy-MM-dd HH:mm'}}}};
+
+  if (chartTemp) chartTemp.destroy();
+  chartTemp = new Chart(document.getElementById('chartTemp'),{type:'line',data:{labels,datasets:[{label:'Temp (°C)',data:temps,borderColor:'#dc3545',fill:false,tension:0.2}]},options:baseOpts});
+  if (chartHum) chartHum.destroy();
+  chartHum = new Chart(document.getElementById('chartHum'),{type:'line',data:{labels,datasets:[{label:'Wilgotność (%)',data:hums,borderColor:'#0dcaf0',fill:false,tension:0.2}]},options:baseOpts});
+  if (chartCo2) chartCo2.destroy();
+  chartCo2 = new Chart(document.getElementById('chartCo2'),{type:'line',data:{labels,datasets:[{label:'CO₂ (ppm)',data:co2s,borderColor:'#ffc107',fill:false,tension:0.2}]},options:baseOpts});
+  if (chartNh3) chartNh3.destroy();
+  chartNh3 = new Chart(document.getElementById('chartNh3'),{type:'line',data:{labels,datasets:[{label:'NH₃ (ppm)',data:nh3s,borderColor:'#6f42c1',fill:false,tension:0.2}]},options:baseOpts});
+  if (chartSun) chartSun.destroy();
+  chartSun = new Chart(document.getElementById('chartSun'),{type:'line',data:{labels,datasets:[{label:'Nasłonecznienie',data:suns,borderColor:'#fd7e14',fill:false,tension:0.2}]},options:baseOpts});
+}
+
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => {
+      b.classList.remove('btn-primary', 'active');
+      b.classList.add('btn-outline-primary');
+    });
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-primary', 'active');
+    const hours = parseInt(btn.getAttribute('data-hours'), 10) || 24;
+    loadDeviceCharts(hours);
+  });
+});
+
+(function initRangeDevice(){
+  const defaultBtn = document.querySelector('.range-btn[data-hours="24"]') || document.querySelector('.range-btn');
+  if (!defaultBtn) return;
+  document.querySelectorAll('.range-btn').forEach(b => { b.classList.remove('btn-primary','active'); b.classList.add('btn-outline-primary'); });
+  defaultBtn.classList.remove('btn-outline-primary');
+  defaultBtn.classList.add('btn-primary','active');
+  const hours = parseInt(defaultBtn.getAttribute('data-hours'),10) || 24;
+  loadDeviceCharts(hours);
+})();
+</script>
+{% endblock %}

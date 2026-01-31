@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Panel Admina — MacNuggetNet{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-gear me-2"></i>Panel Administratora</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card text-bg-primary">
+      <div class="card-body">
+        <h5 class="card-title">{{ users|length }}</h5>
+        <p class="card-text mb-0">Użytkowników</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-bg-success">
+      <div class="card-body">
+        <h5 class="card-title">{{ kurniki|length }}</h5>
+        <p class="card-text mb-0">Kurników</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-bg-info">
+      <div class="card-body">
+        <h5 class="card-title">{{ readings_count }}</h5>
+        <p class="card-text mb-0">Odczytów w bazie</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mb-3 text-end">
+  <form method="post" action="{{ url_for('admin_clear_db') }}" onsubmit="return confirm('Na pewno wyczyścić wszystkie odczyty w bazie? Ta operacja jest nieodwracalna.');" class="d-inline">
+    <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Wyczyść bazę</button>
+  </form>
+  <a href="{{ url_for('admin_devices') }}" class="btn btn-sm btn-outline-light ms-2"><i class="bi bi-hdd-stack"></i> Pokaż urządzenia</a>
+</div>
+
+<!-- Users -->
+<h5 class="mb-3"><i class="bi bi-people me-1"></i> Użytkownicy</h5>
+<div class="table-responsive mb-4">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Nazwa</th>
+        <th>E-mail</th>
+        <th>Admin</th>
+        <th>Utworzony</th>
+        <th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email }}</td>
+        <td>
+          {% if u.is_admin %}<span class="badge bg-danger">Admin</span>{% else %}<span class="badge bg-secondary">User</span>{% endif %}
+        </td>
+        <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+        <td>
+          {% if u.id != current_user.id %}
+          <form method="post" action="{{ url_for('toggle_admin', user_id=u.id) }}" class="d-inline">
+            <button class="btn btn-sm btn-outline-warning" title="Zmień uprawnienia"><i class="bi bi-shield"></i></button>
+          </form>
+          <form method="post" action="{{ url_for('delete_user', user_id=u.id) }}" class="d-inline" onsubmit="return confirm('Usunąć użytkownika?');">
+            <button class="btn btn-sm btn-outline-danger" title="Usuń"><i class="bi bi-trash"></i></button>
+          </form>
+          {% else %}
+          <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Kurniki -->
+<h5 class="mb-3"><i class="bi bi-house-door me-1"></i> Wszystkie kurniki</h5>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Nazwa</th>
+        <th>Właściciel</th>
+        <th>Topic ID</th>
+        <th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for k in kurniki %}
+      <tr>
+        <td>{{ k.id }}</td>
+        <td>{{ k.name }}</td>
+        <td>{{ k.owner_name }}</td>
+        <td><code>{{ k.topic_id }}</code></td>
+        <td>
+          <form method="post" action="{{ url_for('admin_delete_kurnik', kurnik_id=k.id) }}" class="d-inline" onsubmit="return confirm('Usunąć kurnik?');">
+            <button class="btn btn-sm btn-outline-danger" title="Usuń"><i class="bi bi-trash"></i></button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edytuj' if kurnik else 'Nowy' }} kurnik — MacNuggetNet{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">{{ 'Edytuj kurnik' if kurnik else 'Nowy kurnik' }}</li>
+  </ol>
+</nav>
+
+<div class="card shadow-sm" style="max-width: 600px;">
+  <div class="card-body">
+    <h4 class="mb-4"><i class="bi bi-house-door me-2"></i>{{ 'Edytuj kurnik' if kurnik else 'Dodaj nowy kurnik' }}</h4>
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label">Nazwa kurnika</label>
+        <input type="text" name="name" class="form-control" required value="{{ kurnik.name if kurnik else '' }}">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Lokalizacja <small class="text-muted">(opcjonalnie)</small></label>
+        <input type="text" name="location" class="form-control" value="{{ kurnik.location if kurnik else '' }}">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Topic ID</label>
+        <div class="input-group">
+          <span class="input-group-text">kurnik/</span>
+          <input type="text" name="topic_id" class="form-control" required placeholder="k1" value="{{ kurnik.topic_id if kurnik else '' }}">
+        </div>
+        <div class="form-text">Unikalny identyfikator tematu MQTT (np. k1, k2, farma_north)</div>
+      </div>
+      <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Zapisz</button>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Anuluj</a>
+    </form>
+
+    {% if kurnik %}
+    <hr>
+    <form method="post" action="{{ url_for('kurnik_delete', kurnik_id=kurnik.id) }}" onsubmit="return confirm('Na pewno usunąć ten kurnik?');">
+      <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Usuń kurnik</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Rejestracja — MacNuggetNet{% endblock %}
+
+{% block content_guest %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-5 col-lg-4">
+    <div class="card shadow">
+      <div class="card-body p-4">
+        <h3 class="text-center mb-4"><i class="bi bi-person-plus text-success"></i> Rejestracja</h3>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Nazwa użytkownika</label>
+            <input type="text" name="username" class="form-control" required minlength="3" autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">E-mail</label>
+            <input type="email" name="email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Hasło</label>
+            <input type="password" name="password" class="form-control" required minlength="6">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Powtórz hasło</label>
+            <input type="password" name="password2" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-success w-100">Utwórz konto</button>
+        </form>
+        <hr>
+        <p class="text-center mb-0">Masz już konto? <a href="{{ url_for('login') }}">Zaloguj się</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

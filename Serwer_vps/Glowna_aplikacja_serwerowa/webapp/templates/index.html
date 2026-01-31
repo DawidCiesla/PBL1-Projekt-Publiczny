@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>MQTT Telemetry — Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .chart { width: 100%; max-width: 900px; margin-bottom: 32px; }
+    </style>
+  </head>
+  <body>
+    <h1>MQTT Telemetry — Dashboard</h1>
+
+    <label>Topic: <input id="topic" value="kurnik/k1"></label>
+    <button id="load">Load</button>
+
+    <div class="chart">
+      <canvas id="tempChart"></canvas>
+    </div>
+    <div class="chart">
+      <canvas id="humChart"></canvas>
+    </div>
+
+    <script>
+      const ctxTemp = document.getElementById('tempChart').getContext('2d');
+      const ctxHum = document.getElementById('humChart').getContext('2d');
+
+      const tempChart = new Chart(ctxTemp, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Temperature (°C)', data: [], borderColor: 'red', fill:false }]},
+        options: { scales: { x: { type: 'time', time: { tooltipFormat: 'YYYY-MM-DD HH:mm' } } } }
+      });
+
+      const humChart = new Chart(ctxHum, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Humidity (%)', data: [], borderColor: 'blue', fill:false }]},
+        options: { scales: { x: { type: 'time', time: { tooltipFormat: 'YYYY-MM-DD HH:mm' } } } }
+      });
+
+      async function load(topic){
+        const res = await fetch(`/api/series?topic=${encodeURIComponent(topic)}&limit=500`);
+        const json = await res.json();
+        const labels = json.data.map(d=>d.ts);
+        const temps = json.data.map(d=>d.temp);
+        const hums = json.data.map(d=>d.hum);
+
+        tempChart.data.labels = labels;
+        tempChart.data.datasets[0].data = temps;
+        tempChart.update();
+
+        humChart.data.labels = labels;
+        humChart.data.datasets[0].data = hums;
+        humChart.update();
+      }
+
+      document.getElementById('load').addEventListener('click', ()=>{
+        load(document.getElementById('topic').value);
+      });
+
+      // initial
+      load(document.getElementById('topic').value);
+    </script>
+  </body>
+</html>

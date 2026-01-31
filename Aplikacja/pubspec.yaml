@@ -1,0 +1,122 @@
+name: mac_nugget_net
+description: "MacNuggetNet – Twoja inteligentna ferma drobiu"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # UI / routing / state
+  go_router: ^14.2.7
+  flutter_riverpod: ^2.5.1
+
+  # Networking
+  dio: ^5.7.0
+  pretty_dio_logger: ^1.4.0
+  web_socket_channel: ^3.0.1
+
+  # Secure storage
+  flutter_secure_storage: ^9.2.2
+
+  # Charts & formatting
+  fl_chart: ^0.69.0
+  intl: ^0.20.2
+
+  # PDF reports
+  pdf: ^3.11.1
+  printing: ^5.13.4
+
+  # Utils
+  uuid: ^4.5.1
+  cupertino_icons: ^1.0.8
+
+  # QR code scanning
+  mobile_scanner: ^7.1.4
+  # Bluetooth Low Energy
+  flutter_reactive_ble: ^5.4.0
+  # Permissions (BLE scan/connect on Android 12+)
+  permission_handler: ^11.3.1
+  # WiFi SSID scanning (Android; iOS requires special entitlements)
+  wifi_scan: ^0.4.1+2
+  # Font Awesome icons
+  font_awesome_flutter: ^10.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+  flutter_native_splash: ^2.4.3
+  mockito: ^5.4.4
+  build_runner: ^2.4.6
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/logo.png
+    - assets/images/logo_clean.png
+    - assets/images/logo_with_text.png
+    - assets/images/Projekt_bez_nazwy.png
+    - assets/images/kolo.png
+    - assets/images/ikona.png
+    - assets/images/iphone.png
+    # PDF: wczytywanie fontów przez rootBundle na wszystkich platformach
+    - assets/fonts/NotoSans-Regular.ttf
+    - assets/fonts/NotoSans-Bold.ttf
+  
+  fonts:
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+        - asset: assets/fonts/NotoSans-Bold.ttf
+          weight: 700
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-Regular.ttf
+        - asset: assets/fonts/Montserrat-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Montserrat-Bold.ttf
+          weight: 700
+
+# Konfiguracja ikon aplikacji – adaptive icons dla Androida 12+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo_clean.png"
+  
+  min_sdk_android: 21
+  
+  # Adaptive icons dla Android 8.0+ (API 26+)
+  adaptive_icon_background: "#00BCD4"
+  adaptive_icon_foreground: "assets/images/logo_clean.png"
+
+# Konfiguracja splash screen – współpraca z kolorystyką logotypu
+flutter_native_splash:
+  color: "#F5F5F5"
+  # Platform-specific colors (override general color)
+  color_android: "#F5F5F5"
+
+  # Platform-specific images
+  image_android: assets/images/ikona.png
+  image_ios: assets/images/iphone.png
+  android_gravity: center
+  fullscreen: true
+  info_plist_files:
+    - "ios/Runner/Info.plist"
+  android_12:
+    image: assets/images/kolo.png
+    icon_background_color: "#263238"
+  
+  android: true
+  ios: true
+  web: false
+  
+  # iOS - fullscreen image fill
+  ios_content_mode: scaleAspectFill

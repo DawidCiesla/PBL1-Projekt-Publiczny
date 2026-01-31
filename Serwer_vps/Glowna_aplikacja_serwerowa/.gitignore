@@ -1,0 +1,6 @@
+
+# SSL i certyfikaty
+nginx/ssl/
+certbot/
+# Plik zmiennych środowiskowych zawierający sekrety
+.env

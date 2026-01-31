@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Adaptive icon background – główny kolor aplikacji (cyan) -->
+    <color name="ic_launcher_background">#00BCD4</color>
+    
+    <!-- Kolor dla Material You (Android 12+) dynamicznych tematów -->
+    <color name="ic_launcher_accent">#00BCD4</color>
+    
+    <!-- Kolor tła splash screen -->
+    <color name="splash_color">#F5F5F5</color>
+</resources>

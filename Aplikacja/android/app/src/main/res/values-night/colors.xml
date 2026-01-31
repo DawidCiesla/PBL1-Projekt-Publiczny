@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Adaptive icon background dla dark mode – ciemny odcień -->
+    <color name="ic_launcher_background">#1A1A1A</color>
+    
+    <!-- Kolor akcentu dla Material You w dark mode -->
+    <color name="ic_launcher_accent">#00BCD4</color>
+</resources>

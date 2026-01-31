@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Kura {{ id_kury }} — {{ kurnik.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('kurnik_detail', kurnik_id=kurnik.id) }}">{{ kurnik.name }}</a></li>
+    <li class="breadcrumb-item active">Kura {{ id_kury }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3>Kura {{ id_kury }}{% if name %} — {{ name }}{% endif %}</h3>
+    <p class="text-muted mb-0">Kurnik: {{ kurnik.name }} · Topic: <code>{{ kurnik.topic_id }}</code></p>
+  </div>
+  <div>
+    <form method="post" action="{{ url_for('kura_set_name', kurnik_id=kurnik.id, id_kury=id_kury) }}" class="d-flex align-items-center me-2">
+      <input type="text" name="name" value="{{ name or '' }}" class="form-control form-control-sm me-2" placeholder="Imię kury" style="width:180px;">
+      <button class="btn btn-sm btn-outline-success" type="submit">Zapisz</button>
+    </form>
+    <a href="{{ url_for('kurnik_detail', kurnik_id=kurnik.id) }}" class="btn btn-outline-secondary">Powrót</a>
+  </div>
+</div>
+
+{% if events and events|length > 0 %}
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Tryb</th>
+        <th>Waga (kg)</th>
+        <th>Czas zdarzenia</th>
+        <th>Surowy payload</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+      <tr>
+        <td>{% if e.tryb_kury == 1 %}W kurniku{% else %}Na zewnątrz{% endif %}</td>
+        <td>{{ '%.2f'|format(e.waga) if e.waga is not none else '—' }}</td>
+        <td><small class="text-muted">{{ e.event_time.strftime('%Y-%m-%d %H:%M') if e.event_time else (e.created_at.strftime('%Y-%m-%d %H:%M') if e.created_at else '—') }}</small></td>
+        <td><code>{{ e.payload_raw }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-secondary">Brak zarejestrowanych zdarzeń dla tej kury.</div>
+{% endif %}
+
+{% endblock %}

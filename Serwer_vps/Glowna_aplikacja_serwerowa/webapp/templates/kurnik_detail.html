@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+{% block title %}{{ kurnik.name }} — MacNuggetNet{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  .mesh-topology-container {
+    width: 100%;
+    height: 500px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background: #f8f9fa;
+  }
+  .mesh-node {
+    cursor: pointer;
+  }
+  .mesh-node circle {
+    fill: #0d6efd;
+    stroke: #fff;
+    stroke-width: 2px;
+  }
+  .mesh-node.root circle {
+    fill: #198754;
+  }
+  .mesh-node text {
+    font-size: 11px;
+    text-anchor: middle;
+  }
+  .mesh-link {
+    fill: none;
+    stroke: #999;
+    stroke-width: 2px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+    <li class="breadcrumb-item active">{{ kurnik.name }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2><i class="bi bi-house-door text-primary me-2"></i>{{ kurnik.name }}</h2>
+    <p class="text-muted mb-0"><i class="bi bi-geo-alt"></i> {{ kurnik.location or '—' }} · Topic: <code>{{ kurnik.topic_id }}</code></p>
+  </div>
+  <a href="{{ url_for('kurnik_edit', kurnik_id=kurnik.id) }}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Edytuj</a>
+</div>
+
+<!-- Average stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat temp">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. Temp</div>
+        <div class="fs-4 fw-bold">{{ '%.1f'|format(avg_stats.avg_temp) if avg_stats.avg_temp else '—' }} °C</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat hum">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. Wilgotność</div>
+        <div class="fs-4 fw-bold">{{ '%.1f'|format(avg_stats.avg_hum) if avg_stats.avg_hum else '—' }} %</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat co2">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. CO₂</div>
+        <div class="fs-4 fw-bold">{{ '%d'|format(avg_stats.avg_co2) if avg_stats.avg_co2 else '—' }} ppm</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat nh3">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. NH₃</div>
+        <div class="fs-4 fw-bold">{{ '%d'|format(avg_stats.avg_nh3) if avg_stats.avg_nh3 else '—' }} ppm</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat sun">
+      <div class="card-body py-2">
+        <div class="text-muted small">Śr. Nasłonecznienie</div>
+        <div class="fs-4 fw-bold">{{ '%d'|format(avg_stats.avg_sun) if avg_stats.avg_sun else '—' }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="card card-stat">
+      <div class="card-body py-2">
+        <div class="text-muted small">Odczyty (24h)</div>
+        <div class="fs-4 fw-bold">{{ avg_stats.readings_count or 0 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Devices table -->
+<h5 class="mb-3"><i class="bi bi-cpu me-1"></i> Urządzenia (ostatni odczyt)</h5>
+{% if devices %}
+<div class="table-responsive mb-4">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>ID</th>
+        <th>Temp</th>
+        <th>Wilgotność</th>
+        <th>CO₂</th>
+        <th>NH₃</th>
+        <th>Nasłonecznienie</th>
+        <th>Czas</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in devices %}
+      <tr>
+        <td><a href="{{ url_for('device_detail', kurnik_id=kurnik.id, device_id=d.device_id) }}" class="badge bg-secondary text-decoration-none text-white">{{ d.device_id }}</a></td>
+        <td>{{ '%.1f'|format(d.temp) if d.temp else '—' }} °C</td>
+        <td>{{ '%.1f'|format(d.hum) if d.hum else '—' }} %</td>
+        <td>{{ d.co2 if d.co2 else '—' }} ppm</td>
+        <td>{{ d.nh3 if d.nh3 else '—' }} ppm</td>
+        <td>{{ d.sun if d.sun else '—' }}</td>
+        <td><small class="text-muted">{{ d.created_at.strftime('%Y-%m-%d %H:%M') if d.created_at else '—' }}</small></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-warning">Brak danych z urządzeń dla tego kurnika.</div>
+{% endif %}
+
+<!-- Mesh Topology Visualization -->
+<h5 class="mb-3"><i class="bi bi-diagram-3 me-1"></i> Topologia sieci Mesh</h5>
+<div class="card mb-4">
+  <div class="card-body">
+    <div id="meshTopology" class="mesh-topology-container">
+      <div class="d-flex justify-content-center align-items-center h-100">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Ładowanie...</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-2 text-muted small" id="meshTimestamp"></div>
+  </div>
+</div>
+
+<!-- Charts -->
+<h5 class="mb-3"><i class="bi bi-graph-up me-1"></i> Wykresy</h5>
+<div class="mb-3">
+  <div class="btn-group" role="group" aria-label="Time range">
+    <button type="button" class="btn btn-sm btn-outline-primary range-btn" data-hours="1">1h</button>
+    <button type="button" class="btn btn-sm btn-outline-primary range-btn" data-hours="6">6h</button>
+    <button type="button" class="btn btn-sm btn-primary range-btn active" data-hours="24">24h</button>
+    <button type="button" class="btn btn-sm btn-outline-primary range-btn" data-hours="72">3d</button>
+    <button type="button" class="btn btn-sm btn-outline-primary range-btn" data-hours="168">7d</button>
+  </div>
+</div>
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Temperatura</div>
+      <div class="card-body"><canvas id="chartTemp"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Wilgotność</div>
+      <div class="card-body"><canvas id="chartHum"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">CO₂</div>
+      <div class="card-body"><canvas id="chartCo2"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">NH₃</div>
+      <div class="card-body"><canvas id="chartNh3"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Nasłonecznienie</div>
+      <div class="card-body"><canvas id="chartSun"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Chickens list (below charts) -->
+<h5 class="mb-3">Kury</h5>
+{% if chickens and chickens|length > 0 %}
+<div class="table-responsive mb-4">
+  <table class="table table-striped table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>ID kury</th>
+        <th>Imię</th>
+        <th>Tryb</th>
+        <th>Waga</th>
+        <th>Czas</th>
+        <th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in chickens %}
+      <tr>
+        <td>{{ c.id_kury }}</td>
+        <td>
+          <form method="post" action="{{ url_for('kura_set_name', kurnik_id=kurnik.id, id_kury=c.id_kury) }}" class="d-flex align-items-center">
+            <span class="me-2 text-truncate" style="max-width:90px; display:inline-block;">{{ c.name or '—' }}</span>
+            <input type="text" name="name" value="{{ c.name or '' }}" class="form-control form-control-sm me-2" placeholder="Imię" style="width:130px;">
+            <button class="btn btn-sm btn-outline-success" type="submit">Zapisz</button>
+          </form>
+        </td>
+        <td>{% if c.tryb_kury == 1 %}W kurniku{% else %}Na zewnątrz{% endif %}</td>
+        <td>{{ '%.2f'|format(c.waga) if c.waga is not none else '—' }} kg</td>
+        <td><small class="text-muted">{{ c.event_time.strftime('%Y-%m-%d %H:%M') if c.event_time else (c.created_at.strftime('%Y-%m-%d %H:%M') if c.created_at else '—') }}</small></td>
+        <td>
+          <a href="{{ url_for('kura_detail', kurnik_id=kurnik.id, id_kury=c.id_kury) }}" class="btn btn-sm btn-outline-primary">Pokaż statystyki</a>
+          <form method="post" action="{{ url_for('kura_delete', kurnik_id=kurnik.id, id_kury=c.id_kury) }}" style="display:inline; margin-left:6px;" onsubmit="return confirm('Usunąć wszystkie zdarzenia tej kury?');">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Usuń</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-secondary">Brak zarejestrowanych kur dla tego kurnika.</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const topic = '{{ kurnik.topic_id }}';
+const kurnikId = parseInt('{{ kurnik.id }}');
+let chartTemp, chartHum, chartCo2, chartNh3, chartSun;
+
+// Mesh topology visualization
+async function loadMeshTopology() {
+  try {
+    const res = await fetch(`/api/kurnik/${kurnikId}/mesh_topology`);
+    const json = await res.json();
+    
+    const container = document.getElementById('meshTopology');
+    container.innerHTML = '';
+    
+    if (!json.topology) {
+      container.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><p class="text-muted">Brak danych o topologii sieci mesh</p></div>';
+      return;
+    }
+    
+    if (json.timestamp) {
+      const date = new Date(json.timestamp);
+      document.getElementById('meshTimestamp').textContent = `Ostatnia aktualizacja: ${date.toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' })}`;
+    }
+    
+    // Convert topology to D3 hierarchy
+    function buildHierarchy(node) {
+      const result = {
+        name: node.nodeId.toString(),
+        nodeId: node.nodeId,
+        isRoot: node.root || false,
+        children: []
+      };
+      
+      if (node.subs && node.subs.length > 0) {
+        result.children = node.subs.map(sub => buildHierarchy(sub));
+      }
+      
+      return result;
+    }
+    
+    const hierarchyData = buildHierarchy(json.topology);
+    
+    // Setup D3 tree visualization
+    const width = container.offsetWidth;
+    const height = container.offsetHeight;
+    
+    const svg = d3.select('#meshTopology')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+    
+    const g = svg.append('g')
+      .attr('transform', `translate(${width / 2}, 40)`);
+    
+    const tree = d3.tree()
+      .size([width - 100, height - 100])
+      .separation((a, b) => (a.parent == b.parent ? 1 : 1.5));
+    
+    const root = d3.hierarchy(hierarchyData);
+    tree(root);
+    
+    // Draw links
+    g.selectAll('.mesh-link')
+      .data(root.links())
+      .enter()
+      .append('path')
+      .attr('class', 'mesh-link')
+      .attr('d', d3.linkVertical()
+        .x(d => d.x - width / 2)
+        .y(d => d.y));
+    
+    // Draw nodes
+    const node = g.selectAll('.mesh-node')
+      .data(root.descendants())
+      .enter()
+      .append('g')
+      .attr('class', d => `mesh-node ${d.data.isRoot ? 'root' : ''}`)
+      .attr('transform', d => `translate(${d.x - width / 2}, ${d.y})`);
+    
+    node.append('circle')
+      .attr('r', 20);
+    
+    node.append('text')
+      .attr('dy', '0.35em')
+      .attr('fill', 'white')
+      .text(d => {
+        const id = d.data.nodeId.toString();
+        return id.length > 8 ? id.slice(-6) : id;
+      });
+    
+    node.append('text')
+      .attr('dy', '35')
+      .attr('fill', '#495057')
+      .style('font-size', '10px')
+      .text(d => d.data.isRoot ? 'ROOT' : '');
+    
+    // Add tooltip on hover
+    node.append('title')
+      .text(d => `Node ID: ${d.data.nodeId}${d.data.isRoot ? ' (ROOT)' : ''}`);
+    
+  } catch (error) {
+    console.error('Failed to load mesh topology:', error);
+    const container = document.getElementById('meshTopology');
+    container.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><p class="text-danger">Błąd ładowania topologii</p></div>';
+  }
+}
+
+async function loadCharts(hours=24) {
+  const res = await fetch(`/api/series?topic=${encodeURIComponent(topic)}&hours=${hours}&limit=2000`);
+  const json = await res.json();
+  // Aggregate readings from multiple devices: group by fixed millisecond buckets and average
+  const rows = json.data || [];
+  // decide bucket size (ms) to keep roughly <=200 points
+  const approxPoints = 200;
+  const totalMs = hours * 3600 * 1000;
+  const bucketMs = Math.max(60 * 1000, Math.floor(totalMs / approxPoints));
+
+  function bucketKey(ts) {
+    const t = Date.parse(ts);
+    if (Number.isNaN(t)) return ts;
+    const bucketStart = Math.floor(t / bucketMs) * bucketMs;
+    return new Date(bucketStart).toISOString();
+  }
+
+  const buckets = new Map();
+  for (const r of rows) {
+    if (!r.ts) continue;
+    const key = bucketKey(r.ts);
+    if (!buckets.has(key)) buckets.set(key, {count:0, tempSum:0, tempCnt:0, humSum:0, humCnt:0, co2Sum:0, co2Cnt:0, nh3Sum:0, nh3Cnt:0, sunSum:0, sunCnt:0});
+    const b = buckets.get(key);
+    b.count += 1;
+    if (r.temp !== null && r.temp !== undefined) { b.tempSum += r.temp; b.tempCnt += 1; }
+    if (r.hum !== null && r.hum !== undefined) { b.humSum += r.hum; b.humCnt += 1; }
+    if (r.co2 !== null && r.co2 !== undefined) { b.co2Sum += r.co2; b.co2Cnt += 1; }
+    if (r.nh3 !== null && r.nh3 !== undefined) { b.nh3Sum += r.nh3; b.nh3Cnt += 1; }
+    if (r.sun !== null && r.sun !== undefined) { b.sunSum += r.sun; b.sunCnt += 1; }
+  }
+
+  const sortedKeys = Array.from(buckets.keys()).sort();
+  const labels = [];
+  const temps = [], hums = [], co2s = [], nh3s = [], suns = [];
+  for (const k of sortedKeys) {
+    const b = buckets.get(k);
+    labels.push(k);
+    temps.push(b.tempCnt ? (b.tempSum / b.tempCnt) : null);
+    hums.push(b.humCnt ? (b.humSum / b.humCnt) : null);
+    co2s.push(b.co2Cnt ? Math.round(b.co2Sum / b.co2Cnt) : null);
+    nh3s.push(b.nh3Cnt ? Math.round(b.nh3Sum / b.nh3Cnt) : null);
+    suns.push(b.sunCnt ? Math.round(b.sunSum / b.sunCnt) : null);
+  }
+
+  const baseOpts = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { x: { type: 'time', time: { tooltipFormat: 'yyyy-MM-dd HH:mm' } } }
+  };
+
+  if (chartTemp) chartTemp.destroy();
+  chartTemp = new Chart(document.getElementById('chartTemp'), { type: 'line', data: { labels, datasets: [{ label: 'Temp (°C)', data: temps, borderColor: '#dc3545', fill: false, tension: 0.2 }] }, options: baseOpts });
+
+  if (chartHum) chartHum.destroy();
+  chartHum = new Chart(document.getElementById('chartHum'), { type: 'line', data: { labels, datasets: [{ label: 'Wilgotność (%)', data: hums, borderColor: '#0dcaf0', fill: false, tension: 0.2 }] }, options: baseOpts });
+
+  if (chartCo2) chartCo2.destroy();
+  chartCo2 = new Chart(document.getElementById('chartCo2'), { type: 'line', data: { labels, datasets: [{ label: 'CO₂ (ppm)', data: co2s, borderColor: '#ffc107', fill: false, tension: 0.2 }] }, options: baseOpts });
+
+  if (chartNh3) chartNh3.destroy();
+  chartNh3 = new Chart(document.getElementById('chartNh3'), { type: 'line', data: { labels, datasets: [{ label: 'NH₃ (ppm)', data: nh3s, borderColor: '#6f42c1', fill: false, tension: 0.2 }] }, options: baseOpts });
+
+  if (chartSun) chartSun.destroy();
+  chartSun = new Chart(document.getElementById('chartSun'), { type: 'line', data: { labels, datasets: [{ label: 'Nasłonecznienie', data: suns, borderColor: '#fd7e14', fill: false, tension: 0.2 }] }, options: baseOpts });
+}
+
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => {
+      b.classList.remove('btn-primary', 'active');
+      b.classList.add('btn-outline-primary');
+    });
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-primary', 'active');
+    const hours = parseInt(btn.getAttribute('data-hours'), 10) || 24;
+    loadCharts(hours);
+  });
+});
+
+(function initRange(){
+  const defaultBtn = document.querySelector('.range-btn[data-hours="24"]') || document.querySelector('.range-btn');
+  if (!defaultBtn) return;
+  document.querySelectorAll('.range-btn').forEach(b => { b.classList.remove('btn-primary','active'); b.classList.add('btn-outline-primary'); });
+  defaultBtn.classList.remove('btn-outline-primary');
+  defaultBtn.classList.add('btn-primary','active');
+  const hours = parseInt(defaultBtn.getAttribute('data-hours'),10) || 24;
+  loadCharts(hours);
+})();
+
+// Load mesh topology on page load
+loadMeshTopology();
+
+// Refresh mesh topology every 30 seconds
+setInterval(loadMeshTopology, 30000);
+</script>
+{% endblock %}

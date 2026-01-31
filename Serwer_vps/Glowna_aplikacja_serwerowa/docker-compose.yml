@@ -1,0 +1,120 @@
+services:
+  mosquitto-init:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto-init
+    restart: "no"
+    environment:
+      MQTT_USER: ${MQTT_USER:-esp8266}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-esp8266}
+    volumes:
+      - ./mosquitto/conf:/mosquitto/config
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        if [ ! -f /mosquitto/config/passwd ]; then
+          echo "Creating /mosquitto/config/passwd for user: $$MQTT_USER"
+          mosquitto_passwd -b -c /mosquitto/config/passwd "$$MQTT_USER" "$$MQTT_PASSWORD"
+        fi
+        chmod 600 /mosquitto/config/passwd
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    depends_on:
+      - mosquitto-init
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/conf:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: iot_db
+      MYSQL_USER: iot_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/conf:/etc/mysql/conf.d:ro
+
+  mqtt-to-mysql:
+    build: ./mqtt-to-mysql
+    container_name: mqtt-to-mysql
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+      - mysql
+    environment:
+      PYTHONUNBUFFERED: 1
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+      MQTT_USER: ${MQTT_USER:-esp8266}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-esp8266}
+      MQTT_TOPIC: "kurnik/#"
+      DB_HOST: mysql
+      DB_USER: iot_user
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: iot_db
+
+  adminer:
+    image: adminer:4
+    container_name: adminer
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    ports:
+      - "127.0.0.1:8081:8080"
+
+  webapp:
+    build: ./webapp
+    container_name: webapp
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      DB_HOST: mysql
+      DB_USER: iot_user
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: iot_db
+    ports:
+      - "5000:5000"
+
+# nginx reverse-proxy + certbot
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot-var:/var/www/certbot      
+    depends_on:
+      - webapp
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    restart: "no"
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/www/certbot
+
+volumes:
+  mysql_data:
+  mosquitto_data:
+  certbot-etc:
+  certbot-var:

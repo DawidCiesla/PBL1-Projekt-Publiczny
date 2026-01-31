@@ -1,0 +1,10 @@
+[mysqld]
+# Enable general query log for audit purposes
+general_log=1
+general_log_file=/var/lib/mysql/general.log
+log_output=FILE
+
+# Ensure binlog is enabled for point-in-time recovery
+log_bin=/var/lib/mysql/binlog
+binlog_expire_logs_seconds=604800
+max_binlog_size=100M
